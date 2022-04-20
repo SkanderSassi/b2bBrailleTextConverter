@@ -17,5 +17,4 @@ def apply_filter(image, filter, k_size):
                                    )
         
 def apply_thresholding(image, low, high, adaptive = False):
-    if adaptive
     return cv2.threshold(image, low, high, cv2.THRESH_BINARY)

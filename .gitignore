@@ -128,6 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+upload/
+datasets/
+docs/
 
 #test notebooks
 *.ipynb
