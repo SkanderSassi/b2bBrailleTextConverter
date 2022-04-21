@@ -10,10 +10,14 @@ class Config():
         self.API_KEY = os.environ['API_KEY']
         self.HOST_IP = os.environ['HOST_IP']
         self.PORT = os.environ['PORT']
+        self.UPLOAD_DIR = os.environ['UPLOAD_DIR']
+        self.TEMP_IMG_DIR= os.environ['TEMP_IMG_DIR']
+        self.ALLOWED_TYPES = set(os.environ['ALLOWED_TYPES'].split(','))
+        self.UPLOAD_DIR = os.environ['UPLOAD_DIR']
     def __repr__(self) -> str:
         attrs = vars(self)
         return ', '.join("%s: %s" % item for item in attrs.items())
-class DebugConfig(Config):
+class DevelopmentConfig(Config):
     def __init__(self):
         Config.__init__(self)
         self.DEBUG = True
@@ -26,8 +30,9 @@ class ProductionConfig(Config):
 
 def load_config() -> Config:
     load_dotenv()
-    debug_enable = os.environ['DEBUG']
-    if debug_enable == 'TRUE':
-        return DebugConfig()
-    return ProductionConfig()
+    env = os.environ['FLASK_ENV']
+    if env == 'production':
+        return ProductionConfig()
+    return DevelopmentConfig()
 
+config = load_config()

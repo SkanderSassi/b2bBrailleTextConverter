@@ -1,13 +1,11 @@
 from argparse import FileType
 import os
 
+
+from flask import g
 from common.exceptions import *
 from werkzeug.utils import secure_filename
-from dotenv import load_dotenv
-
-load_dotenv()
-ALLOWED_TYPES = set(os.environ['ALLOWED_TYPES'].split(','))
-
+from config import config
 
 
 def get_secure_filename(filename):
@@ -17,6 +15,6 @@ def get_secure_filename(filename):
     return filename_secure
 
 def check_filetype_allowed(filetype):
-    print(ALLOWED_TYPES)
-    if filetype not in ALLOWED_TYPES:
-        raise FileTypeNotAllowed("The specified file type is not allowed", filetype)
+    print(config.ALLOWED_TYPES)
+    if filetype not in config.ALLOWED_TYPES:
+        raise FileTypeNotAllowed(f"The specified file type is not allowed, allowed file types : {config.ALLOWED_TYPES}", filetype)
