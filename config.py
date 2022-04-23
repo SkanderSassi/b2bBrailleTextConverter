@@ -14,6 +14,8 @@ class Config():
         self.TEMP_IMG_DIR= os.environ['TEMP_IMG_DIR']
         self.ALLOWED_TYPES = set(os.environ['ALLOWED_TYPES'].split(','))
         self.UPLOAD_DIR = os.environ['UPLOAD_DIR']
+        self.MINIMUM_CONFIDENCE = float(os.environ['MINIMUM_CONFIDENCE'])
+        self.USE_HOCR = os.environ['USE_HOCR'] == "TRUE"
     def __repr__(self) -> str:
         attrs = vars(self)
         return ', '.join("%s: %s" % item for item in attrs.items())

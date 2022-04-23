@@ -31,6 +31,7 @@ def convert_pdf_to_image(file_path: List[str], output_directory : str,
             out_dir_parent.mkdir()
             
     for single_file_path in file_path:
+        
         file_name = PurePath(single_file_path).parts[-1]
         file_name_no_ext = file_name.split('.')[0]
         in_file = Path(single_file_path)

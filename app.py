@@ -7,9 +7,10 @@ from flask import jsonify, request
 from dotenv import load_dotenv
 from config import config
 from http import HTTPStatus as statuses
-from common.utils import check_filetype_allowed, get_secure_filename
+from common.utils import check_filetype_allowed, get_secure_filename, extract_lines,extract_hocr_lines
 from common.exceptions import *
 from flaskapp.ocr import OCR
+
 load_dotenv()
 
 
@@ -43,15 +44,26 @@ def extract():
     data = json.loads(request.data)
     ocr = OCR(doc_dir=config.UPLOAD_DIR, pretrained=True, verbose=True)
     ocr.to_gpu()
-    result =  ocr.extract('visa_document.pdf')
-    print(result)
-    return jsonify({'message': 'Text Extraction successfull'}), statuses.ACCEPTED
+    print(config.USE_HOCR)
+    ocr_output =  ocr.extract(data['filename'], use_hocr = config.USE_HOCR)
+    if config.USE_HOCR:
+        #TODO reformat this ugly code
+        return jsonify([{'page_number': page_idx ,
+                     'lines' : extract_hocr_lines(page, 
+                                             config.MINIMUM_CONFIDENCE,                
+                                             )}
+                    for page_idx, page in enumerate(ocr_output)]), statuses.OK
+    else:
+        return jsonify([{'page_number': page['page_idx'] ,
+                        'lines' : extract_lines(page, 
+                                                config.MINIMUM_CONFIDENCE,
+                                                )}
+                        for page in ocr_output['pages']]), statuses.OK
 
 @app.route('/cancel',methods=['POST'])
 def cancel():
     pass
     
-
 if __name__ == '__main__':
    
     # import flaskapp.routes

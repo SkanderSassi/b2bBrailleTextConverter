@@ -56,7 +56,8 @@ class OCR():
         if self.verbose:
             print("Switching OCR to CPU")
         self.predictor.cpu()
-    def extract(self, filename, is_rotated = False):
+        
+    def extract(self, filename, is_rotated = False, use_hocr = False):
         # TODO add support for images
         if self.verbose:
             print(f"OCR launched on file {filename}")
@@ -67,7 +68,12 @@ class OCR():
         output = self.predictor(docfile)
         if self.verbose:
             print(f"OCR finished on file {file_path}")
-        return output
+        if use_hocr: 
+            #NOTE Hack to make XML readable for some reason
+            pages = [page[0].decode('utf8') for page in output.export_as_xml()]
+            return pages
+        
+        return output.export()
         
     def __prepare_data(self):
         pass
