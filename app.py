@@ -1,9 +1,10 @@
 # 202 accepted and in prosesing
+from http.client import BAD_REQUEST
 import os
 import flaskapp
 import json
 from pathlib import Path
-from flask import jsonify, request
+from flask import Response, jsonify, request,make_response
 from dotenv import load_dotenv
 from config import config
 from http import HTTPStatus as statuses
@@ -35,34 +36,43 @@ def upload():
         file.save(upload_path.joinpath(filename))
     except EmptyFileName as e:
         # print(e.with_traceback())
-        return jsonify({'message':e.message}), statuses.BAD_REQUEST
+        return make_response(jsonify({'message':e.message})
+                             , statuses.BAD_REQUEST)
     except FileTypeNotAllowed as e:
         # print(e.with_traceback())
-        return jsonify({'message':e.message}), statuses.BAD_REQUEST
-    return jsonify({'message': 'File uploaded'}), statuses.OK
+        return make_response(jsonify({'message':e.message}), 
+                             statuses.BAD_REQUEST)
+    return make_response(jsonify({'message': 'File uploaded'}), 
+                         statuses.OK)
         
 @app.route('/extract', methods=['POST'])
 def extract():
-    data = json.loads(request.data)
-    ocr = OCR(doc_dir=config.UPLOAD_DIR, pretrained=True, verbose=True)
-    ocr.to_gpu()
-    print(config.USE_HOCR)
-    ocr_output =  ocr.extract(data['filename'], use_hocr = config.USE_HOCR)
+    try:
+        data = json.loads(request.data)
+        ocr = OCR(doc_dir=config.UPLOAD_DIR, pretrained=True, verbose=True)
+        ocr.to_gpu()
+        print(f"Using HOCR : {config.USE_HOCR}")
+        ocr_output =  ocr.extract(data['filename'], use_hocr = config.USE_HOCR)
+    except FileNotFoundError as e:
+        return make_response(jsonify({'message' : 'Uploaded file not found in server'}),
+                                     statuses.BAD_REQUEST)
+    except Exception as e:
+        return make_response(jsonify({'message' : 'Something happened'}),statuses.INTERNAL_SERVER_ERROR)
     if config.USE_HOCR:
         #TODO reformat this ugly code
-         return jsonify({'data':[{'page_number': page_idx ,
-                                 'lines' : extract_lines(page, 
+         return make_response(jsonify({'data':[{'page_number': page_idx ,
+                                 '      lines' : extract_lines(page, 
                                                         config.MINIMUM_CONFIDENCE,
                                                 )} for page_idx ,page in enumerate(ocr_output)]
                          }
-                        ), statuses.OK
+                        ), statuses.OK)
     else:
-        return jsonify({'data':[{'page_number': page['page_idx'] ,
-                                 'lines' : extract_lines(page, 
-                                                        config.MINIMUM_CONFIDENCE,
+        return make_response(jsonify({'data':[{'page_number': page['page_idx'] ,
+                                      'lines' : extract_lines(page, 
+                                                              config.MINIMUM_CONFIDENCE,
                                                 )} for page in ocr_output['pages']]
                         }
-                        ), statuses.OK
+                        ), statuses.OK)
 
 @app.route('/cancel',methods=['POST'])
 def cancel():
