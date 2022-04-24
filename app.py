@@ -23,10 +23,12 @@ app = flaskapp.create_app()
 @app.route('/upload', methods=['POST'])
 def upload():
     #Refactor to try except
+    print(request.files)
     file = request.files['file']
     try:
         filename = get_secure_filename(file.filename)
         file_type = file.mimetype.split('/')[-1]
+        print(file_type)
         check_filetype_allowed(file_type)
         upload_path = Path(config.UPLOAD_DIR)
         upload_path.mkdir(parents=True, exist_ok=True)
@@ -48,17 +50,19 @@ def extract():
     ocr_output =  ocr.extract(data['filename'], use_hocr = config.USE_HOCR)
     if config.USE_HOCR:
         #TODO reformat this ugly code
-        return jsonify([{'page_number': page_idx ,
-                     'lines' : extract_hocr_lines(page, 
-                                             config.MINIMUM_CONFIDENCE,                
-                                             )}
-                    for page_idx, page in enumerate(ocr_output)]), statuses.OK
+         return jsonify({'data':[{'page_number': page_idx ,
+                                 'lines' : extract_lines(page, 
+                                                        config.MINIMUM_CONFIDENCE,
+                                                )} for page_idx ,page in enumerate(ocr_output)]
+                         }
+                        ), statuses.OK
     else:
-        return jsonify([{'page_number': page['page_idx'] ,
-                        'lines' : extract_lines(page, 
-                                                config.MINIMUM_CONFIDENCE,
-                                                )}
-                        for page in ocr_output['pages']]), statuses.OK
+        return jsonify({'data':[{'page_number': page['page_idx'] ,
+                                 'lines' : extract_lines(page, 
+                                                        config.MINIMUM_CONFIDENCE,
+                                                )} for page in ocr_output['pages']]
+                        }
+                        ), statuses.OK
 
 @app.route('/cancel',methods=['POST'])
 def cancel():
