@@ -1,22 +1,24 @@
 # 202 accepted and in prosesing
-from http.client import BAD_REQUEST
 import os
-import flaskapp
 import json
+from http.client import BAD_REQUEST
 from pathlib import Path
 from flask import Response, jsonify, request,make_response
 from dotenv import load_dotenv
 from config import config
 from http import HTTPStatus as statuses
-from common.utils import check_filetype_allowed, get_secure_filename, extract_lines,extract_hocr_lines
+from common.utils import extract_lines
 from common.exceptions import *
+from common.helpers import create_timestamp,check_filetype_allowed, get_secure_filename
 from flaskapp.ocr import OCR
+from flaskapp import create_app
+
 
 load_dotenv()
 
 
 
-app = flaskapp.create_app()
+app = create_app()
 
 
 
@@ -24,16 +26,17 @@ app = flaskapp.create_app()
 @app.route('/upload', methods=['POST'])
 def upload():
     #Refactor to try except
-    print(request.files)
+    # print(request.files)
     file = request.files['file']
     try:
         filename = get_secure_filename(file.filename)
         file_type = file.mimetype.split('/')[-1]
-        print(file_type)
-        check_filetype_allowed(file_type)
+        check_filetype_allowed(file_type, config.ALLOWED_TYPES)
         upload_path = Path(config.UPLOAD_DIR)
         upload_path.mkdir(parents=True, exist_ok=True)
-        file.save(upload_path.joinpath(filename))
+        tstamp = create_timestamp(True)
+        filename_with_stamp = f"{tstamp}{filename}"
+        file.save(upload_path.joinpath(filename_with_stamp))
     except EmptyFileName as e:
         # print(e.with_traceback())
         return make_response(jsonify({'message':e.message})
@@ -42,9 +45,9 @@ def upload():
         # print(e.with_traceback())
         return make_response(jsonify({'message':e.message}), 
                              statuses.BAD_REQUEST)
-    return make_response(jsonify({'message': 'File uploaded'}), 
+    return make_response(jsonify({'message': 'File uploaded', 'filename': filename_with_stamp}), 
                          statuses.OK)
-        
+    
 @app.route('/extract', methods=['POST'])
 def extract():
     try:
@@ -60,14 +63,14 @@ def extract():
         return make_response(jsonify({'message' : 'Something happened'}),statuses.INTERNAL_SERVER_ERROR)
     if config.USE_HOCR:
         #TODO reformat this ugly code
-         return make_response(jsonify({'data':[{'page_number': page_idx ,
+         return make_response(jsonify({'pages':[{'page_number': page_idx ,
                                  '      lines' : extract_lines(page, 
                                                         config.MINIMUM_CONFIDENCE,
                                                 )} for page_idx ,page in enumerate(ocr_output)]
                          }
                         ), statuses.OK)
     else:
-        return make_response(jsonify({'data':[{'page_number': page['page_idx'] ,
+        return make_response(jsonify({'pages':[{'page_number': page['page_idx'] ,
                                       'lines' : extract_lines(page, 
                                                               config.MINIMUM_CONFIDENCE,
                                                 )} for page in ocr_output['pages']]
